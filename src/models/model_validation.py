@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.linear_model import lars_path
 from sklearn.model_selection import train_test_split, KFold
@@ -68,7 +69,7 @@ def cross_val(X, y, model, drop_cols=None, standardize=False, alpha=None, random
 
     """
     kf = KFold(n_splits=n_splits, shuffle=True, random_state=random_state)
-    is_lm_r2s, oos_lm_r2s, oos_lm_mse, is_lm_aic = [], [], [], [] #collect the validation results
+    is_lm_r2s, oos_lm_r2s, oos_lm_mse,oos_lm_mae, is_lm_aic = [], [], [], [], [] #collect the validation results
 
     last_lm = None
     if drop_cols:
@@ -97,6 +98,7 @@ def cross_val(X, y, model, drop_cols=None, standardize=False, alpha=None, random
         is_lm_r2s.append(metrics.r2_score(y_true=y_tr, y_pred=in_sample_preds))
         oos_lm_r2s.append(metrics.r2_score(y_true=y_val, y_pred=out_sample_preds))
         oos_lm_mse.append(metrics.mean_squared_error(y_true=y_val, y_pred=out_sample_preds))
+        oos_lm_mae.append(metrics.mean_absolute_error(y_true=y_val, y_pred=out_sample_preds))
 
         # get AIC
         regr = sm.OLS(y_tr, add_constant(X_tr)).fit()
@@ -108,13 +110,14 @@ def cross_val(X, y, model, drop_cols=None, standardize=False, alpha=None, random
         ('R2 (in sample)', is_lm_r2s),
         ('R2', oos_lm_r2s),
         ('Mean Sq Error', oos_lm_mse),
+        ('Mean abs error', oos_lm_mae),
         ('AIC (in sample)', is_lm_aic),
     ], show_all=show_all)
 
     if sm_summary or resid_plots:
         if standardize:
             scaler = StandardScaler()
-            X = scaler.fit_transform(X)
+            X = pd.DataFrame(scaler.fit_transform(X), columns=X.columns, index=X.index)
         fit = run_stats_models(X, y, show_summary=sm_summary)
 
         if resid_plots:
@@ -124,7 +127,7 @@ def cross_val(X, y, model, drop_cols=None, standardize=False, alpha=None, random
 
 def generate_LARS_plot(X, y):
     X_lars = StandardScaler().fit_transform(X.values)
-    alphas_lars, _, coefs_lars = lars_path(X_lars, y.values, method='lasso')
+    _, _, coefs_lars = lars_path(X_lars, y.values, method='lasso')
 
     # plotting the LARS path
     plt.rcParams['image.cmap'] = 'gray'

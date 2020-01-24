@@ -13,4 +13,4 @@ def clean_data(raw, remove_outliers=True):
 
     for_model.columns = [x.replace('#', 'num').replace('%', 'perc') for x in for_model.columns]
 
-    return for_model.reset_index().drop(columns=['Unnamed: 0', 'index'])
+    return for_model.reset_index().drop(columns=['index'])
